@@ -23,6 +23,10 @@ expect eof
 EOF
 
 chmod +x /tmp/exsci
+
+if [ ! -f ~/.ssh/id_rsa ]; then
+  ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+fi
 sudo yum install -y expect
 
 for hostname in ${HOSTNAMES[@]}; do
