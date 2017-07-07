@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -25,31 +26,53 @@ fi
 
 IFS=' ' read -r -a HOSTNAMES <<< "$(split ${1})"
 
-cat > /tmp/exsci <<EOF
+cat > /tmp/local-exsci <<EOF
 #! /usr/bin/expect -f
 
 set host [lindex \$argv 0]
 set password [lindex \$argv 1]
-spawn ssh-copy-id -o StrictHostKeyChecking=no root@\$host
+spawn ssh-copy-id -i ${ID_FILE} root@\$host
 expect "*?assword:*"
 send -- "\$password\r"
 expect eof
 EOF
 
-chmod +x /tmp/exsci
+cat > /tmp/remote-exsci <<EOF
+#! /usr/bin/expect -f
 
-if [ ! -f ~/.ssh/id_rsa ]; then
-  ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+set host [lindex \$argv 0]
+set password [lindex \$argv 1]
+spawn ssh-copy-id root@\$host
+expect "*?assword:*"
+send -- "\$password\r"
+expect eof
+EOF
+
+
+chmod +x /tmp/local-exsci
+
+echo "USER: ${USER}"
+echo "HOME: ${HOME}"
+echo "whoami: $(whoami)"
+echo "~: $(echo ~)"
+
+if [ ! -f ${ID_FILE} ]; then
+  mkdir -p $(dirname ${ID_FILE})
+  ssh-keygen -f ${ID_FILE} -t rsa -N ''
+  echo "Host *" >> ~/.ssh/config
+  echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 fi
 sudo yum install -y expect
 
 for hostname in ${HOSTNAMES[@]}; do
-  /tmp/exsci ${hostname} ${PASSWORD}
-  scp /tmp/exsci root@${hostname}:/tmp/
-  ssh root@${hostname} "
+  /tmp/local-exsci ${hostname} ${PASSWORD}
+  scp /tmp/remote-exsci root@${hostname}:/tmp/exsci
+  ssh -i ${ID_FILE} root@${hostname} "
   chmod +x /tmp/exsci
   if [ ! -f ~/.ssh/id_rsa ]; then
     ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+    echo \"Host *\" >> ~/.ssh/config
+    echo \"  StrictHostKeyChecking no\" >> ~/.ssh/config
   fi
   yum install -y expect
   /tmp/exsci localhost ${PASSWORD}
@@ -60,11 +83,11 @@ done
 
 # Test passwordless SSH
 for hostname in ${HOSTNAMES[@]}; do
-  ssh root@${hostname} "
+  ssh -i ${ID_FILE} root@${hostname} "
     for inner_hostname in ${HOSTNAMES[@]}; do
-      ssh -o StrictHostKeyChecking=no root@\${inner_hostname} \"hostname\"
+      ssh root@\${inner_hostname} \"hostname\"
     done
   " < /dev/null
 done
-# TODO how to fail if this fails?
+# TODO fail if this fails?
 

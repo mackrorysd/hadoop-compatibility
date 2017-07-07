@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -27,7 +28,7 @@ IFS=' ' read -r -a HOSTNAMES <<< "$(split ${3})"
 if [ ! -e ~/hadoop-${VERSION}.tar.gz ]; then
   # TODO Assumes toolchain and other environment setup is done
   (
-    git clone git://git.apache.org/hadoop.git
+    git clone git://github.com/apache/hadoop.git
     cd hadoop
     git checkout ${GIT_REF}
     mvn clean package -DskipTests -Pdist -Dtar
@@ -38,7 +39,7 @@ if [ ! -e ~/hadoop-${VERSION}.tar.gz ]; then
 fi
 scp ~/hadoop-${VERSION}.tar.gz root@${HOSTNAMES[0]}:~/
 
-ssh root@${HOSTNAMES[0]} ". /tmp/env.sh
+ssh -i ${ID_FILE} root@${HOSTNAMES[0]} ". /tmp/env.sh
   for hostname in ${HOSTNAMES[@]}; do
     if [ "\${hostname}" != "${HOSTNAMES[0]}" ]; then
       scp hadoop-${VERSION}.tar.gz root@\${hostname}:~/

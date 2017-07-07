@@ -1,20 +1,23 @@
 export ZK_VERSION=3.4.9
-export JDK_RPM= # HTTP path to JDK RPM
-export JAVA_HOME=/usr/java/jdk1.8.0_91
+export MAVEN_TGZ= # HTTP path to Maven binary .tar.gz release
+export PROTOC_RPM= # HTTP path to Protocol Buffers RPM
+export JDK_RPM= # HTTP path to Java Development Kit RPM
+export JAVA_HOME= # Path to Java as installed by RPM
+export PATH=${JAVA_HOME}/bin:${PATH} # May need to add protoc's directory
 
-export HOST_PREFIX=
-export HOST_SUFFIX=
+export HOST_PREFIX= # Part of hostname before {1..9}, etc.
+export HOST_SUFFIX= # Part of hostname after {1..9}, etc.
 
-export PASSWORD=
+export PASSWORD= # SSH password to all machines
+export ID_FILE=~/.ssh/id_rsa
 
-export V2=2.7.0
-export V3=3.0.0-alpha2-SNAPSHOT
-export V2_GIT=release-2.7.0
+export V2=2.6.0
+export V3=3.0.0-beta1-SNAPSHOT
+export V2_GIT=release-2.6.0
 export V3_GIT=trunk
 export ROOT=/root
 export HADOOP_2=${ROOT}/hadoop-${V2}
 export HADOOP_3=${ROOT}/hadoop-${V3}
-
 
 function one_cluster_env() {
   IFS=' ' read -r -a HOSTNAMES <<< $(echo ${HOST_PREFIX}{1..9}${HOST_SUFFIX})
@@ -54,4 +57,3 @@ function export_cluster_env() {
   export ZK_QUORUM
   export CONF
 }
-

@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -23,10 +24,13 @@ IFS=' ' read -r -a HOSTNAMES <<< "$(split ${1})"
 
 for hostname in ${HOSTNAMES[@]}; do
   scp env.sh root@${hostname}:/tmp/
-  ssh root@${hostname} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     # Install JDK
     rpm -i ${JDK_RPM}
     echo 'export JAVA_HOME=${JAVA_HOME}' >> /etc/profile
+    wget ${MAVEN_TGZ}
+    tar xzf apache-maven-*-bin.tar.gz
+    ln -s \$(pwd)/apache-maven-*/bin/mvn /usr/bin/
 
     # Populate hosts file
     cat > /etc/hosts <<EOF
@@ -39,4 +43,13 @@ EOF
     done
   " < /dev/null
 done
+
+if [ ! -d $(pwd)/apache-maven-3.5.0 ]; then
+  wget ${MAVEN_TGZ}
+  tar xzf apache-maven-*-bin.tar.gz
+  ln -s $(pwd)/apache-maven-*/bin/mvn /usr/bin/ || true
+fi
+
+rpm -i ${JDK_RPM} || true
+rpm -i ${PROTOC_RPM} || true
 

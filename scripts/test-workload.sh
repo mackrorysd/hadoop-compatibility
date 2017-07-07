@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -34,17 +35,19 @@ fi
 
 if [ "${COMMAND}" == 'start' ]; then
   # NOTE: underscores or hyphens in directory names fails because partition_list can't be found
-  ssh root@${HOSTNAME} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${HOSTNAME} ". /tmp/env.sh
     touch ${RUNNING_FLAG}
     cd ${HADOOP_2}
     MR_EXAMPLES=${HADOOP_2}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${V2}.jar
-    bin/hadoop jar \${MR_EXAMPLES} teragen -Dmapred.map.tasks=${WORKERS} 10000000 /terain
+    bin/hadoop jar \${MR_EXAMPLES} teragen -Dmapred.map.tasks=${WORKERS} 10000000 /teragen
     for i in {0..9}; do
       (
         while [ -e ${RUNNING_FLAG} ]; do
-          bin/hadoop jar \${MR_EXAMPLES} terasort /terain /teraout\${i}
+          bin/hadoop jar \${MR_EXAMPLES} terasort /teragen /terasort\${i} >> ${LOG_FILE}.\${i} 2>&1
           echo "\`date\` Terasort \${i}: \${?}" >> ${LOG_FILE}
-          bin/hadoop fs -rm -r -skipTrash /teraout\${i}
+          bin/hadoop jar \${MR_EXAMPLES} teravalidate /terasort\${i} /teravalidate\${i} >> ${LOG_FILE}.\${i} 2>&1
+          echo "\`date\` Teravalidate \${i}: \${?}" >> ${LOG_FILE}
+          bin/hadoop fs -rm -r -skipTrash /terasort\${i} /teravalidate\${i} >> ${LOG_FILE}.\${i} 2>&1
           echo "\`date\` Deletion \${i}: \${?}" >> ${LOG_FILE}
         done
         touch ${SHUTDOWN_FLAG}_\${i}
@@ -55,7 +58,7 @@ if [ "${COMMAND}" == 'start' ]; then
 fi
 
 if [ "${COMMAND}" == 'stop' ]; then
-  ssh root@${HOSTNAME} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${HOSTNAME} ". /tmp/env.sh
     rm -f ${RUNNING_FLAG}
     for i in {0..9}; do
       while [ ! -e ${SHUTDOWN_FLAG}_\${i} ]; do

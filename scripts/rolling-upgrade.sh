@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -25,7 +26,7 @@ IFS=' ' read -r -a NAMENODES <<< "$(split ${3})"
 IFS=' ' read -r -a DATANODES <<< "$(split ${4})"
 
 # Ensure NN1 is active and begin prepare for rolling upgrade
-ssh root@${NAMENODES[0]} ". /tmp/env.sh
+ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_2}
   bin/hdfs haadmin -failover nn2 nn1
   bin/hdfs dfsadmin -rollingUpgrade prepare
@@ -36,7 +37,7 @@ ssh root@${NAMENODES[0]} ". /tmp/env.sh
 " < /dev/null
 
 # Shutdown and upgrade NN2, start it, then fail over to it
-ssh root@${NAMENODES[1]} ". /tmp/env.sh
+ssh -i ${ID_FILE} root@${NAMENODES[1]} ". /tmp/env.sh
   cd ${HADOOP_2}
   sbin/hadoop-daemon.sh stop namenode
   cd ${HADOOP_3}
@@ -48,7 +49,7 @@ ssh root@${NAMENODES[1]} ". /tmp/env.sh
 " < /dev/null
 
 # Shutdown and upgrade NN1, and start it
-ssh root@${NAMENODES[0]} ". /tmp/env.sh
+ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_2}
   sbin/hadoop-daemon.sh stop namenode
   cd ${HADOOP_3}
@@ -57,7 +58,7 @@ ssh root@${NAMENODES[0]} ". /tmp/env.sh
 
 # Shutdown and upgrade each DN
 for datanode in ${DATANODES[@]}; do
-  ssh root@${NAMENODES[0]} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
     cd ${HADOOP_2}
     bin/hdfs dfsadmin -shutdownDatanode ${datanode}:50020 upgrade
     while bin/hdfs dfsadmin -getDatanodeInfo ${datanode}:50020; do
@@ -65,13 +66,13 @@ for datanode in ${DATANODES[@]}; do
       sleep 60
     done
   " < /dev/null
-  ssh root@${datanode} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${datanode} ". /tmp/env.sh
     cd ${HADOOP_3}
     sbin/hadoop-daemon.sh start datanode
   " < /dev/null
 done
 
-ssh root@${NAMENODES[0]} ". /tmp/env.sh
+ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_3}
   bin/hdfs dfsadmin -rollingUpgrade finalize
 " < /dev/null
@@ -79,7 +80,7 @@ ssh root@${NAMENODES[0]} ". /tmp/env.sh
 # Upgrade JournalNodes 1 at a time
 # Note that documentation does not currently specify how JournalNodes should be update
 for hostname in ${JN_QUORUM[@]}; do
-  ssh root@${hostname} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     cd ${HADOOP_2}
     sbin/hadoop-daemon.sh stop journalnode
     cd ${HADOOP_3}

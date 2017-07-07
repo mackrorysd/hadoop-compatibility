@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -37,7 +38,7 @@ NS1="${NS1}<property><name>dfs.namenode.http-address.ns1.nn2</name>       <value
 NS1="${NS1}<property><name>dfs.client.failover.proxy.provider.ns1</name>  <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>"
 
 for hostname in ${HOSTNAMES[@]}; do
-  ssh root@${hostname} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     mkdir -p ${CONF}
     cat > ${CONF}/hdfs-site.xml <<EOF
 <configuration>

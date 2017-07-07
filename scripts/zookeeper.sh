@@ -16,6 +16,7 @@
 
 source scripts/functions.sh
 
+set -e
 set -v
 set -x
 
@@ -27,7 +28,7 @@ for ((i=0; i<${#ZK_QUORUM[*]}; i++)); do
 done
 
 for host in ${ZK_QUORUM[@]}; do
-  ssh root@${host} ". /tmp/env.sh
+  ssh -i ${ID_FILE} root@${host} ". /tmp/env.sh
     wget http://www-us.apache.org/dist/zookeeper/zookeeper-${ZK_VERSION}/zookeeper-${ZK_VERSION}.tar.gz
     tar xzf zookeeper-${ZK_VERSION}.tar.gz
     mv zookeeper-${ZK_VERSION} zookeeper
