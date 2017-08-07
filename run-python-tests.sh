@@ -2,7 +2,7 @@
 
 MIRROR=http://apache.cs.utah.edu/hadoop/common
 RELEASE_1=2.8.0
-RELEASE_2=3.0.0-alpha4
+RELEASE_2=3.0.0-beta1-SNAPSHOT
 
 cd python
 

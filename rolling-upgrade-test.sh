@@ -26,10 +26,11 @@ one_cluster_env
 scripts/passwordless-ssh.sh $(join ${HOSTNAMES[@]})
 scripts/host-setup.sh $(join ${HOSTNAMES[@]})
 scripts/zookeeper.sh $(join ${ZK_QUORUM[@]})
-scripts/distribute-hadoop.sh ${V2} ${V2_GIT} $(join ${HOSTNAMES[@]})
-scripts/distribute-hadoop.sh ${V3} ${V3_GIT} $(join ${HOSTNAMES[@]})
+scripts/build-distribute-hadoop.sh ${V2} ${V2_GIT} $(join ${HOSTNAMES[@]})
+scripts/build-distribute-hadoop.sh ${V3} ${V3_GIT} $(join ${HOSTNAMES[@]})
 
 for hostname in ${HOSTNAMES[@]}; do
+  log "Extracting tarballs and linking configuration on ${hostname}..."
   ssh root@${hostname} ". /tmp/env.sh
     rm -rf hadoop-${V2} hadoop-${V3} ${CONF}
     tar xzf hadoop-${V2}.tar.gz
@@ -51,11 +52,35 @@ ssh root@${NAMENODES[0]} ". /tmp/env.sh
   sbin/mr-jobhistory-daemon.sh --config ${CONF} start historyserver
 " < /dev/null
 
+ssh root@${NAMENODES[1]} ". /tmp/env.sh
+  cd ${HADOOP_2}
+  sbin/start-yarn.sh # start-yarn.sh is not HA-aware
+" < /dev/null
+
 scripts/test-workload.sh start ${HOSTNAMES[0]} ${#DATANODES[@]} &
 
-sleep 60
+log "Running workload for a while before starting upgrades..."
 
-scripts/rolling-upgrade.sh $(join ${HOSTNAMES[@]}) $(join ${JN_QUORUM[@]}) $(join ${NAMENODES[@]}) $(join ${DATANODES[@]})
+sleep ${ARTIFICIAL_DELAY}
+
+scripts/hdfs-rolling-upgrade.sh $(join ${HOSTNAMES[@]}) $(join ${JN_QUORUM[@]}) $(join ${NAMENODES[@]}) $(join ${DATANODES[@]})
+
+#scripts/yarn-rolling-upgrade.sh $(join ${HOSTNAMES[@]}) $(join ${NAMENODES[@]}) $(join ${DATANODES[@]})
 
 scripts/test-workload.sh stop ${HOSTNAMES[0]}
 
+log "Getting YARN application list..."
+
+ssh root@${NAMENODES[0]} ". /tmp/env.sh
+  cd ${HADOOP_3}
+  bin/yarn application -list -appStates ALL 2>/dev/null
+" < /dev/null 2> /dev/null > /tmp/yarnApps.txt
+
+cat /tmp/yarnApps.txt
+
+log "Checking for failures..."
+
+# Filter out only the Tera* jobs we ran, and anything but FINISHED
+cat /tmp/yarnApps.txt | grep Tera | grep -v FINISHED*SUCCEEDED
+
+SUCCESS=${?}

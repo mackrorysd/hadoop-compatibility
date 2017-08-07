@@ -73,8 +73,19 @@ EOF
 EOF
     cat > ${CONF}/yarn-site.xml <<EOF
 <configuration>
-    <property><name>yarn.resourcemanager.hostname</name>           <value>${NAMENODES[0]}</value></property>
+    <property><name>yarn.resourcemanager.ha.enabled</name>         <value>true</value></property>
+    <property><name>yarn.resourcemanager.cluster-id</name>         <value>cluster1</value></property>
+    <property><name>yarn.resourcemanager.ha.rm-ids</name>          <value>rm1,rm2</value></property>
+    <property><name>yarn.resourcemanager.hostname.rm1</name>       <value>${NAMENODES[0]}</value></property>
+    <property><name>yarn.resourcemanager.hostname.rm2</name>       <value>${NAMENODES[1]}</value></property>
+    <property><name>yarn.resourcemanager.zk-address</name>         <value>${ZK_QUORUM[0]}:2181,${ZK_QUORUM[1]}:2181,${ZK_QUORUM[2]}:2181</value></property>
+
     <property><name>yarn.nodemanager.aux-services</name>           <value>mapreduce_shuffle</value></property>
+    <property><name>yarn.resourcemanager.recovery.enabled</name>   <value>true</value></property>
+
+    <!-- Had problems with FS-based restart - not meant for HA anyway -->
+    <property><name>yarn.resourcemanager.store.class</name>        <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value></property>
+    <property><name>yarn.resourcemanager.zk-address</name>         <value>${ZK_QUORUM[0]}:2181,${ZK_QUORUM[1]}:2181,${ZK_QUORUM[2]}:2181</value></property>
 </configuration>
 EOF
     rm -f ${CONF}/slaves

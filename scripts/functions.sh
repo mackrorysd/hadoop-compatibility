@@ -46,3 +46,13 @@ function check_yarn_daemons() {
   done
 }
 
+function log() {
+  message=${1}
+  echo "HADOOP-COMPATIBILITY $(date) ${message}"
+}
+
+function delay() {
+  log "Introducing artificial delay of ${ARTIFICIAL_DELAY} seconds..."
+  sleep ${ARTIFICIAL_DELAY}
+}
+

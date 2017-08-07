@@ -38,20 +38,23 @@ if [ "${COMMAND}" == 'start' ]; then
   ssh -i ${ID_FILE} root@${HOSTNAME} ". /tmp/env.sh
     touch ${RUNNING_FLAG}
     cd ${HADOOP_2}
+
     MR_EXAMPLES=${HADOOP_2}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${V2}.jar
     bin/hadoop jar \${MR_EXAMPLES} teragen -Dmapred.map.tasks=${WORKERS} 10000000 /teragen
     for i in {0..9}; do
+      echo \"Launching process \${i}...\"
       (
         while [ -e ${RUNNING_FLAG} ]; do
-          bin/hadoop jar \${MR_EXAMPLES} terasort /teragen /terasort\${i} >> ${LOG_FILE}.\${i} 2>&1
-          echo "\`date\` Terasort \${i}: \${?}" >> ${LOG_FILE}
+          bin/hadoop jar \${MR_EXAMPLES} terasort -Dmapreduce.terasort.output.replication=3 /teragen /terasort\${i} >> ${LOG_FILE}.\${i} 2>&1
+          echo \"\`date\` Terasort \${i}: \${?}\" >> ${LOG_FILE}
           bin/hadoop jar \${MR_EXAMPLES} teravalidate /terasort\${i} /teravalidate\${i} >> ${LOG_FILE}.\${i} 2>&1
-          echo "\`date\` Teravalidate \${i}: \${?}" >> ${LOG_FILE}
+          echo \"\`date\` Teravalidate \${i}: \${?}\" >> ${LOG_FILE}
           bin/hadoop fs -rm -r -skipTrash /terasort\${i} /teravalidate\${i} >> ${LOG_FILE}.\${i} 2>&1
-          echo "\`date\` Deletion \${i}: \${?}" >> ${LOG_FILE}
+          echo \"\`date\` Deletion \${i}: \${?}\" >> ${LOG_FILE}
         done
         touch ${SHUTDOWN_FLAG}_\${i}
       ) &
+      echo \"Giving process \${i} a head start...\"
       sleep 10
     done
   " < /dev/null

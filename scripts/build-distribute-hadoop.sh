@@ -27,16 +27,23 @@ IFS=' ' read -r -a HOSTNAMES <<< "$(split ${3})"
 # If the tarball doesn't exist, build it
 if [ ! -e ~/hadoop-${VERSION}.tar.gz ]; then
   # TODO Assumes toolchain and other environment setup is done
+  temp_dir=$(mktemp -d)
   (
+    cd ${temp_dir}
     git clone git://github.com/apache/hadoop.git
     cd hadoop
     git checkout ${GIT_REF}
     mvn clean package -DskipTests -Pdist -Dtar
     cp hadoop-dist/target/hadoop-${VERSION}.tar.gz ~/
-    cd ..
-    rm -rf hadoop
   )
+  rm -rf ${temp_dir}
 fi
+
+if [ ! -e ~/hadoop-${VERSION}.tar.gz ]; then
+  log "Hadoop tarball was not present and failed to build!"
+  exit 1
+fi
+
 scp ~/hadoop-${VERSION}.tar.gz root@${HOSTNAMES[0]}:~/
 
 ssh -i ${ID_FILE} root@${HOSTNAMES[0]} ". /tmp/env.sh
