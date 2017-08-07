@@ -4,10 +4,10 @@ if ! rpm -q docker; then
   sudo yum install -y docker
 fi
 
-if service docker status; then
+while ! sudo service docker status; do
   sudo service docker start
-  # TODO: wait?
-fi
+  sleep 60
+done
 
 ROOT_PASSWORD=apache
 # ZooKeeper seems to have a problem if the hostname doesn't include a '.'

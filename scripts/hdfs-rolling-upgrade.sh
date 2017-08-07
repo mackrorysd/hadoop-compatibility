@@ -114,6 +114,8 @@ for hostname in ${JN_QUORUM[@]}; do
   " < /dev/null
 done
 
+log "Upgrading Fail-over Controllers 1 at a time..."
+
 for hostname in ${NAMENODES[@]}; do
   ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     cd ${HADOOP_2}
@@ -130,8 +132,6 @@ for hostname in ${NAMENODES[@]}; do
 
   " < /dev/null
 done
-
-# TODO: upgrade failover controllers
 
 log "Finalizing rolling upgrade..."
 
