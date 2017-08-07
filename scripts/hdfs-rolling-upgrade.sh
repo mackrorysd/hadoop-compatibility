@@ -25,7 +25,8 @@ IFS=' ' read -r -a JN_QUORUM <<< "$(split ${2})"
 IFS=' ' read -r -a NAMENODES <<< "$(split ${3})"
 IFS=' ' read -r -a DATANODES <<< "$(split ${4})"
 
-# Ensure NN1 is active and begin prepare for rolling upgrade
+log "Ensuring NN1 is active and begin prepare for rolling upgrade..."
+
 ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_2}
   bin/hdfs haadmin -failover nn2 nn1
@@ -36,27 +37,42 @@ ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   done
 " < /dev/null
 
-# Shutdown and upgrade NN2, start it, then fail over to it
+log "Shutting down and upgrading NN2, starting it, then failing over to it..."
+
 ssh -i ${ID_FILE} root@${NAMENODES[1]} ". /tmp/env.sh
   cd ${HADOOP_2}
   sbin/hadoop-daemon.sh stop namenode
+
+  sleep ${ARTIFICIAL_DELAY}
+
   cd ${HADOOP_3}
   sbin/hadoop-daemon.sh start namenode -rollingUpgrade started
   while ! bin/hdfs haadmin -failover nn1 nn2; do
     echo 'Sleeping for 1 minute...'
     sleep 60
   done
+
+  sleep ${ARTIFICIAL_DELAY}
+
 " < /dev/null
 
-# Shutdown and upgrade NN1, and start it
+log "Shutting down and upgrading NN1, then starting it"
+
 ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_2}
   sbin/hadoop-daemon.sh stop namenode
+
+  sleep ${ARTIFICIAL_DELAY}
+
   cd ${HADOOP_3}
-  sbin/hadoop-daemon.sh start namenode -rollingUpgrade started
+  bin/hdfs --daemon start namenode -rollingUpgrade started
+
+  sleep ${ARTIFICIAL_DELAY}
+
 " < /dev/null
 
-# Shutdown and upgrade each DN
+log "Shutting down and upgrading each DN..."
+
 for datanode in ${DATANODES[@]}; do
   ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
     cd ${HADOOP_2}
@@ -65,28 +81,65 @@ for datanode in ${DATANODES[@]}; do
       echo 'Sleeping for 1 minute...'
       sleep 60
     done
+
+    sleep ${ARTIFICIAL_DELAY}
+
   " < /dev/null
   ssh -i ${ID_FILE} root@${datanode} ". /tmp/env.sh
     cd ${HADOOP_3}
-    sbin/hadoop-daemon.sh start datanode
+    bin/hdfs --daemon start datanode
+
+    sleep ${ARTIFICIAL_DELAY}
+
   " < /dev/null
 done
 
-ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
-  cd ${HADOOP_3}
-  bin/hdfs dfsadmin -rollingUpgrade finalize
-" < /dev/null
+log "Upgrading JournalNodes 1 at a time..."
 
-# Upgrade JournalNodes 1 at a time
 # Note that documentation does not currently specify how JournalNodes should be update
 for hostname in ${JN_QUORUM[@]}; do
   ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     cd ${HADOOP_2}
     sbin/hadoop-daemon.sh stop journalnode
+
+    sleep ${ARTIFICIAL_DELAY}
+
     cd ${HADOOP_3}
-    sbin/hadoop-daemon.sh start journalnode
+    bin/hdfs --daemon start journalnode
     echo 'Sleeping for 3 minutes...'
     sleep 180
+
+    sleep ${ARTIFICIAL_DELAY}
+
   " < /dev/null
 done
+
+log "Upgrading Fail-over Controllers 1 at a time..."
+
+for hostname in ${NAMENODES[@]}; do
+  ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
+    cd ${HADOOP_2}
+    sbin/hadoop-daemon.sh stop zkfc
+
+    sleep ${ARTIFICIAL_DELAY}
+
+    cd ${HADOOP_3}
+    bin/hdfs --daemon start zkfc
+    echo 'Sleeping for 3 minutes...'
+    sleep 180
+
+    sleep ${ARTIFICIAL_DELAY}
+
+  " < /dev/null
+done
+
+log "Finalizing rolling upgrade..."
+
+ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
+  cd ${HADOOP_3}
+  bin/hdfs dfsadmin -rollingUpgrade finalize
+
+  sleep ${ARTIFICIAL_DELAY}
+
+" < /dev/null
 

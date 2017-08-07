@@ -62,11 +62,15 @@ if [ ! -f ${ID_FILE} ]; then
   echo "Host *" >> ~/.ssh/config
   echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 fi
-sudo yum install -y expect
+yum install -y expect openssh-clients
 
 for hostname in ${HOSTNAMES[@]}; do
-  /tmp/local-exsci ${hostname} ${PASSWORD}
-  scp /tmp/remote-exsci root@${hostname}:/tmp/exsci
+  echo $hostname
+  /tmp/local-exsci ${hostname} ${PASSWORD} || true
+  scp /tmp/remote-exsci root@${hostname}:/tmp/exsci || true
+  if [ "${PLATFORM}" == 'docker' ]; then
+    scp /etc/hosts root@${hostname}:/etc/hosts
+  fi
   ssh -i ${ID_FILE} root@${hostname} "
   chmod +x /tmp/exsci
   if [ ! -f ~/.ssh/id_rsa ]; then
@@ -75,9 +79,9 @@ for hostname in ${HOSTNAMES[@]}; do
     echo \"  StrictHostKeyChecking no\" >> ~/.ssh/config
   fi
   yum install -y expect
-  /tmp/exsci localhost ${PASSWORD}
+  /tmp/exsci localhost ${PASSWORD} || true
   for inner_hostname in ${HOSTNAMES[@]}; do
-    /tmp/exsci \${inner_hostname} ${PASSWORD}
+    /tmp/exsci \${inner_hostname} ${PASSWORD} || true
   done" < /dev/null
 done
 

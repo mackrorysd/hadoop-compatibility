@@ -26,7 +26,7 @@ old_cluster_env
 scripts/passwordless-ssh.sh $(join ${HOSTNAMES[@]})
 scripts/host-setup.sh $(join ${HOSTNAMES[@]})
 scripts/zookeeper.sh $(join ${ZK_QUORUM[@]})
-scripts/distribute-hadoop.sh ${V2} ${V2_GIT} $(join ${HOSTNAMES[@]})
+scripts/build-distribute-hadoop.sh ${V2} ${V2_GIT} $(join ${HOSTNAMES[@]})
 CONF=${HADOOP_2}/etc/hadoop
 for hostname in ${HOSTNAMES[@]}; do
   ssh root@${hostname} ". /tmp/env.sh
@@ -57,7 +57,7 @@ new_cluster_env
 scripts/passwordless-ssh.sh $(join ${HOSTNAMES[@]})
 scripts/host-setup.sh $(join ${HOSTNAMES[@]})
 # No ZooKeeper setup - sharing a quorum with the old cluster - required to access both with HA
-scripts/distribute-hadoop.sh ${V3} ${V3_GIT} $(join ${HOSTNAMES[@]})
+scripts/build-distribute-hadoop.sh ${V3} ${V3_GIT} $(join ${HOSTNAMES[@]})
 CONF=${HADOOP_3}/etc/hadoop
 for hostname in ${HOSTNAMES[@]}; do
   ssh root@${hostname} ". /tmp/env.sh

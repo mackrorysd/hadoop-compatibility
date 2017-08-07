@@ -26,30 +26,31 @@ for hostname in ${HOSTNAMES[@]}; do
   scp env.sh root@${hostname}:/tmp/
   ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
     # Install JDK
+    yum install -y wget
     rpm -i ${JDK_RPM}
     echo 'export JAVA_HOME=${JAVA_HOME}' >> /etc/profile
-    wget ${MAVEN_TGZ}
-    tar xzf apache-maven-*-bin.tar.gz
-    ln -s \$(pwd)/apache-maven-*/bin/mvn /usr/bin/
 
-    # Populate hosts file
-    cat > /etc/hosts <<EOF
+    if [ "${PLATFORM}" != 'docker' ]; then
+      # Populate hosts file
+      cat > /etc/hosts <<EOF
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 EOF
-    for inner_hostname in ${HOSTNAMES[@]}; do
-      address=\`ping -c 1 \${inner_hostname} | grep ^PING | sed -e 's/.* (//' | sed -e 's/) .*//'\`
-      echo \"\${address}    \${inner_hostname}\" >> /etc/hosts
-    done
+      for inner_hostname in ${HOSTNAMES[@]}; do
+        address=\`ping -c 1 \${inner_hostname} | grep ^PING | sed -e 's/.* (//' | sed -e 's/) .*//'\`
+        echo \"\${address}    \${inner_hostname}\" >> /etc/hosts
+      done
+    fi
   " < /dev/null
 done
 
-if [ ! -d $(pwd)/apache-maven-3.5.0 ]; then
+if [ ! -f /usr/bin/mvn ]; then
   wget ${MAVEN_TGZ}
   tar xzf apache-maven-*-bin.tar.gz
   ln -s $(pwd)/apache-maven-*/bin/mvn /usr/bin/ || true
 fi
 
+yum install -y git
 rpm -i ${JDK_RPM} || true
 rpm -i ${PROTOC_RPM} || true
 
