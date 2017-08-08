@@ -25,12 +25,10 @@ IFS=' ' read -r -a HOSTNAMES <<< "$(split ${1})"
 for hostname in ${HOSTNAMES[@]}; do
   scp env.sh root@${hostname}:/tmp/
   ssh -i ${ID_FILE} root@${hostname} ". /tmp/env.sh
-    # Install JDK
-    yum install -y wget
-    rpm -i ${JDK_RPM}
+    apt-get install -y wget
     echo 'export JAVA_HOME=${JAVA_HOME}' >> /etc/profile
 
-    if [ "${PLATFORM}" != 'docker' ]; then
+    if [ \"${PLATFORM}\" != 'docker' ]; then
       # Populate hosts file
       cat > /etc/hosts <<EOF
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
@@ -50,7 +48,7 @@ if [ ! -f /usr/bin/mvn ]; then
   ln -s $(pwd)/apache-maven-*/bin/mvn /usr/bin/ || true
 fi
 
-yum install -y git
+apt-get install -y git
 rpm -i ${JDK_RPM} || true
 rpm -i ${PROTOC_RPM} || true
 

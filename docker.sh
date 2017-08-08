@@ -9,6 +9,18 @@ while ! sudo service docker status; do
   sleep 60
 done
 
+if [ "$(docker images apache:hadoop-dev | wc -l)" == "2" ]; then
+  sudo apt-get install -y git
+  tmp=$(mktemp -d)
+  (
+    cd ${tmp}
+    git clone http://github.com/apache/hadoop.git
+    cd hadoop/dev-support/docker
+    docker build -t apache:hadoop-dev .
+  )
+  rm -rf ${tmp}
+fi
+
 ROOT_PASSWORD=apache
 # ZooKeeper seems to have a problem if the hostname doesn't include a '.'
 HOST_PREFIX=container-
@@ -17,15 +29,15 @@ for i in {1..9}; do
   DOCKER_HASH[i]=$(docker run \
     --detach --interactive --tty \
     --hostname ${HOST_PREFIX}${i}${HOST_SUFFIX} \
-    centos:6)
+    apache:hadoop-dev)
   DOCKER_IP[i]=$(docker exec \
     ${DOCKER_HASH[${i}]} ifconfig eth0 \
     | grep 'inet addr' | awk '{print $2'} | sed 's/.*://')
   echo "${DOCKER_IP[${i}]}    ${HOST_PREFIX}${i}${HOST_SUFFIX}" >> /etc/hosts
   for command in \
     "echo 'root:${ROOT_PASSWORD}' | chpasswd" \
-    "yum install -y openssh-server openssh-clients" \
-    "service sshd start" \
+    "apt-get install -y ssh" \
+    "service ssh start" \
   ; do
     docker exec ${DOCKER_HASH[${i}]} bash -c "${command}"
   done
@@ -39,11 +51,6 @@ git clone http://github.com/mackrorysd/hadoop-compatibility.git
 cd hadoop-compatibility
 cat > env.sh <<EOF
 export ZK_VERSION=3.4.9
-export MAVEN_TGZ= # HTTP path to Maven binary .tar.gz release
-export PROTOC_RPM= # HTTP path to Protocol Buffers RPM
-export JDK_RPM= # HTTP path to Java Development Kit RPM
-export JAVA_HOME= # Path to Java as installed by RPM
-PROTOC_PATH= # Path to protoc as installed by RPM
 export PATH=\\\${PROTOC_PATH}:\\\${JAVA_HOME}/bin:\\\${PATH}
 
 export HOST_PREFIX=${HOST_PREFIX}
