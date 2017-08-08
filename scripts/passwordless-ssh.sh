@@ -62,7 +62,7 @@ if [ ! -f ${ID_FILE} ]; then
   echo "Host *" >> ~/.ssh/config
   echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 fi
-yum install -y expect openssh-clients
+apt-get install -y expect ssh
 
 for hostname in ${HOSTNAMES[@]}; do
   echo $hostname
@@ -78,7 +78,7 @@ for hostname in ${HOSTNAMES[@]}; do
     echo \"Host *\" >> ~/.ssh/config
     echo \"  StrictHostKeyChecking no\" >> ~/.ssh/config
   fi
-  yum install -y expect
+  apt-get install -y expect
   /tmp/exsci localhost ${PASSWORD} || true
   for inner_hostname in ${HOSTNAMES[@]}; do
     /tmp/exsci \${inner_hostname} ${PASSWORD} || true
