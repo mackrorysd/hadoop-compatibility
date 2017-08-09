@@ -53,11 +53,6 @@ ssh root@${NAMENODES[0]} ". /tmp/env.sh
   sbin/mr-jobhistory-daemon.sh --config ${CONF} start historyserver
 " < /dev/null
 
-ssh root@${NAMENODES[1]} ". /tmp/env.sh
-  cd ${HADOOP_2}
-  sbin/start-yarn.sh # start-yarn.sh is not HA-aware
-" < /dev/null
-
 scripts/test-workload.sh start ${HOSTNAMES[0]} ${#DATANODES[@]} &
 
 log "Running workload for a while before starting upgrades..."
