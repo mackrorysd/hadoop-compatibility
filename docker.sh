@@ -69,7 +69,8 @@ cd hadoop-compatibility
 git checkout docker
 cat > env.sh <<EOF
 export ZK_VERSION=3.4.9
-export PATH=\\\${PROTOC_PATH}:\\\${JAVA_HOME}/bin:\\\${PATH}
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle/jre
+export PATH=\\\${JAVA_HOME}/bin:\\\${PATH}
 
 export HOST_PREFIX=${HOST_PREFIX}
 export HOST_SUFFIX=${HOST_SUFFIX}

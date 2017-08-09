@@ -42,13 +42,3 @@ EOF
   " < /dev/null
 done
 
-if [ ! -f /usr/bin/mvn ]; then
-  wget ${MAVEN_TGZ}
-  tar xzf apache-maven-*-bin.tar.gz
-  ln -s $(pwd)/apache-maven-*/bin/mvn /usr/bin/ || true
-fi
-
-apt-get install -y git
-rpm -i ${JDK_RPM} || true
-rpm -i ${PROTOC_RPM} || true
-
