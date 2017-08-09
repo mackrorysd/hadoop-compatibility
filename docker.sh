@@ -1,7 +1,23 @@
 # Test on a CentOS 7.3 host
 
-if ! rpm -q docker; then
-  sudo yum install -y docker
+if ! dpkg-query -l docker-ce; then
+  sudo apt-get update
+
+  sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+  sudo add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) \
+    stable"
+
+  sudo apt-get update
+  sudo apt-get install docker-ce
 fi
 
 while ! sudo service docker status; do
@@ -9,7 +25,7 @@ while ! sudo service docker status; do
   sleep 60
 done
 
-if [ "$(docker images apache:hadoop-dev | wc -l)" == "2" ]; then
+if [ "$(docker images apache:hadoop-dev | wc -l)" != "2" ]; then
   sudo apt-get install -y git
   tmp=$(mktemp -d)
   (
@@ -37,6 +53,7 @@ for i in {1..9}; do
   for command in \
     "echo 'root:${ROOT_PASSWORD}' | chpasswd" \
     "apt-get install -y ssh" \
+    "sed -i -e 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config" \
     "service ssh start" \
   ; do
     docker exec ${DOCKER_HASH[${i}]} bash -c "${command}"
@@ -46,9 +63,10 @@ done
 HOSTS_FILE=$(cat /etc/hosts)
 
 docker exec ${DOCKER_HASH[1]} bash -c "
-yum install -y git
+apt-get install -y git
 git clone http://github.com/mackrorysd/hadoop-compatibility.git
 cd hadoop-compatibility
+git checkout docker
 cat > env.sh <<EOF
 export ZK_VERSION=3.4.9
 export PATH=\\\${PROTOC_PATH}:\\\${JAVA_HOME}/bin:\\\${PATH}
