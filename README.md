@@ -3,30 +3,22 @@ Tools for testing compatibility between Hadoop releases
 
 ## Requirements
 
-- All machines need to run some Red Hat variant of Linux.
-- 1 driver machine (tested with Fedora 24).
-- 9 cluster machines for the rolling upgrade test (tested with CentOS 7.2).
-    It's possible with fewer, but the default topology assumes 9.
-- 14 cluster machines for the pull-over-http test (tested with CentOS 7.2).
-    It's possible with fewer but the default topology assues 18.
-- Recommend n1-standard-1 / n1-standard-2 instances on GCE, or m3.medium /
-    m3.large instances on AWS.
+This testing is now done using the Hadoop's Dockerfile, so it should have no
+unusual external dependencies, but it assumes an Ubuntu 16.04 host. The rolling
+upgrade test has been successully run on a machine with 16 CPU cores and 60 GB
+of RAM (n1-standard-16 on GCE).
+
+Testing was previously done on a virtualized cluster of CentOS 7 machines, but
+changes are necessary to ensure a working toolchain to build and run Hadoop.
+See previous iterations for details.
 
 All clusters are set up with high-availability. For other configuration details
 see scripts/configure-hadoop.sh.
 
 ## Procedure
-- *Edit env.sh*: At a minimum, you'll need to provide a path to the JDK RPM
-    (and possibly update JAVA\_HOME), the HOST\_PREFIX and HOST\_SUFFIX
-    (assumes there's a number between them in each hostname). If passwordless
-    SSH is not already set up, you should also provide a universal SSH
-    password. You may want to update other versions or tweak the topologies
-    defined in the *\_cluster\_env functions.
-- *Get Hadoop releases or build environment*: You'll need to either place the
-    required Hadoop release tarballs in the home directory, or ensure that the
-    toolchain and environment setup to build it has been done.
-- *Run test scripts*: pull-over-http-test.sh will test that you can pull data 
-    from a cluster running the old version (as defined in old\_cluster\_env) to
-    a cluster running the new version (as defined in new\_cluster\_env).
-    rolling-upgrade-test.sh will test that YARN applications can continuously
-    run during and after a rolling upgrade.
+
+Simply run ./docker-rolling-upgrade.sh - it should do everything else.
+
+./rolling-upgrade.sh can be used on other environments assuming a working
+toolchain for building and running Hadoop and the appropriate networking
+configuration is already setup.
