@@ -30,11 +30,7 @@ log "Ensuring NN1 is active and begin prepare for rolling upgrade..."
 ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
   cd ${HADOOP_2}
   bin/hdfs haadmin -failover nn2 nn1
-  bin/hdfs dfsadmin -rollingUpgrade prepare
-  while ! bin/hdfs dfsadmin -rollingUpgrade query | grep 'Proceed with rolling upgrade'; do
-    echo 'Sleeping for 1 minute...'
-    sleep 60
-  done
+  sleep ${ARTIFICIAL_DELAY}
 " < /dev/null
 
 log "Shutting down and upgrading NN2, starting it, then failing over to it..."
@@ -132,14 +128,4 @@ for hostname in ${NAMENODES[@]}; do
 
   " < /dev/null
 done
-
-log "Finalizing rolling upgrade..."
-
-ssh -i ${ID_FILE} root@${NAMENODES[0]} ". /tmp/env.sh
-  cd ${HADOOP_3}
-  bin/hdfs dfsadmin -rollingUpgrade finalize
-
-  sleep ${ARTIFICIAL_DELAY}
-
-" < /dev/null
 
