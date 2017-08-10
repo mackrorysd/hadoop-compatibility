@@ -33,7 +33,7 @@ if [ ! -e ~/hadoop-${VERSION}.tar.gz ]; then
     git clone git://github.com/apache/hadoop.git
     cd hadoop
     git checkout ${GIT_REF}
-    mvn clean package -DskipTests -Pdist -Dtar
+    mvn clean package -DskipTests -Pdist -Dtar -Dmaven.javadoc.skip=true
     cp hadoop-dist/target/hadoop-${VERSION}.tar.gz ~/
   )
   rm -rf ${temp_dir}
