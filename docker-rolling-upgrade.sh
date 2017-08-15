@@ -3,7 +3,7 @@
 if ! dpkg-query -l docker-ce; then
   sudo apt-get update
 
-  sudo apt-get install \
+  sudo apt-get install -y \
     apt-transport-https \
     ca-certificates \
     curl \
@@ -17,7 +17,7 @@ if ! dpkg-query -l docker-ce; then
     stable"
 
   sudo apt-get update
-  sudo apt-get install docker-ce
+  sudo apt-get install -y docker-ce
 fi
 
 while ! sudo service docker status; do
@@ -41,6 +41,7 @@ ROOT_PASSWORD=apache
 # ZooKeeper seems to have a problem if the hostname doesn't include a '.'
 HOST_PREFIX=container-
 HOST_SUFFIX=.docker
+HOSTS_FILE=$(mktemp)
 for i in {1..9}; do
   DOCKER_HASH[i]=$(docker run \
     --detach --interactive --tty \
@@ -49,7 +50,7 @@ for i in {1..9}; do
   DOCKER_IP[i]=$(docker exec \
     ${DOCKER_HASH[${i}]} ifconfig eth0 \
     | grep 'inet addr' | awk '{print $2'} | sed 's/.*://')
-  echo "${DOCKER_IP[${i}]}    ${HOST_PREFIX}${i}${HOST_SUFFIX}" >> /etc/hosts
+  echo "${DOCKER_IP[${i}]}    ${HOST_PREFIX}${i}${HOST_SUFFIX}" >> ${HOSTS_FILE}
   for command in \
     "echo 'root:${ROOT_PASSWORD}' | chpasswd" \
     "apt-get install -y ssh" \
@@ -60,7 +61,7 @@ for i in {1..9}; do
   done
 done
 
-HOSTS_FILE=$(cat /etc/hosts)
+HOSTS_FILE_CONTENTS=$(cat ${HOSTS_FILE})
 
 docker exec ${DOCKER_HASH[1]} bash -c "
 apt-get install -y git
@@ -111,11 +112,12 @@ function export_cluster_env() {
 EOF
 
 cat > /etc/hosts <<EOF
-${HOSTS_FILE}
+${HOSTS_FILE_CONTENTS}
 EOF
 ./rolling-upgrade-test.sh
 "
 
+rm ${HOSTS_FILE}
 for hash in ${DOCKER_HASH[@]}; do
     docker rm --force ${hash}
 done
